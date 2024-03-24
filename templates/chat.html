@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: #eee;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #333;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            position: relative; /* Make container relative for absolute positioning of logout button */
+        }
+
+        h2 {
+            color: #eee;
+        }
+
+        p {
+            color: #ccc;
+        }
+
+        #chatHistory {
+            border: 1px solid #555;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #chatHistory p {
+            margin: 5px 0;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            margin-right: 10px;
+            width: calc(100% - 160px); /* Adjusted width for logout button */
+            color: #eee;
+            background-color: #444;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        select {
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            color: #eee;
+            background-color: #444;
+        }
+
+        /* Styles for logout button */
+        #logoutButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #555;
+            color: #eee;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #logoutButton:hover {
+            background-color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="logoutButton" onclick="logout()">Logout</button> <!-- Logout button -->
+        <h2>Chat Page</h2>
+        <p>Welcome to the chat!</p>
+
+        <div>
+            <p>Current Session ID: <span id="currentSessionId"></span></p>
+            <p>Existing Sessions:</p>
+            <select id="existingSessions" onchange="loadChatHistory()">
+                <!-- Existing session options will be populated here -->
+            </select>
+        </div>
+
+        <div id="chatHistory">
+            <!-- Chat history will be displayed here -->
+        </div>
+
+        <div>
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+
+    <script>
+        // Retrieve session data from localStorage
+        let currentSessionId = localStorage.getItem("currentSessionId");
+        let existingSessions = JSON.parse(localStorage.getItem("existingSessions"));
+        
+        // Display current session ID
+        document.getElementById("currentSessionId").innerText = currentSessionId;
+    
+        // Populate existing sessions dropdown
+        let dropdownOptions = localStorage.getItem("dropdownOptions");
+        document.getElementById("existingSessions").innerHTML = dropdownOptions;
+    
+        // Function to load chat history based on selected session
+        function loadChatHistory() {
+            let selectedSessionId = document.getElementById("existingSessions").value;
+            fetch(`/chat/history?session_id=${selectedSessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                let chatHistory = data.chat_history;
+                let chatHistoryHTML = "";
+                chatHistory.forEach(chat => {
+                    chatHistoryHTML += `<p><strong>You:</strong> ${chat.input}</p>`;
+                    chatHistoryHTML += `<p><strong>Bot:</strong> ${chat.response}</p>`;
+                });
+                document.getElementById("chatHistory").innerHTML = chatHistoryHTML;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+    
+        // Function to send message
+        function sendMessage() {
+            let message = document.getElementById("messageInput").value;
+            let sessionId = document.getElementById("existingSessions").value;
+            
+            fetch(`/chat/?user_input=${message}&session_id=${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                let chatHistoryHTML = document.getElementById("chatHistory").innerHTML;
+                chatHistoryHTML += `<p><strong>You:</strong> ${message}</p>`;
+                chatHistoryHTML += `<p><strong>Bot:</strong> ${data.response}</p>`;
+                document.getElementById("chatHistory").innerHTML = chatHistoryHTML;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+    
+            // Clear input field after sending message
+            document.getElementById("messageInput").value = "";
+        }
+
+        // Function to logout
+        function logout() {
+            let sessionId = document.getElementById("currentSessionId").innerText;
+            
+            fetch(`/chat/logout?session_id=${sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Logout successful
+                    console.log("Logout successful.");
+                    window.location.href =  "/chat/signin"
+                    // Perform any additional actions like clearing session data, redirecting, etc.
+                } else {
+                    // Logout failed
+                    console.error("Logout failed.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+
+        // Load chat history for the most recent session upon page load
+        window.onload = function() {
+            let mostRecentSessionId = existingSessions[existingSessions.length - 1]; // Get the most recent session ID
+            document.getElementById("existingSessions").value = mostRecentSessionId; // Set the dropdown value to the most recent session ID
+            loadChatHistory(); // Load chat history for the most recent session
+        };
+    </script>
+</body>
+</html>

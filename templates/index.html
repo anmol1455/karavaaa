@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Login</div>
+                    <div class="card-body">
+                        <form id="loginForm">
+                            <div class="form-group">
+                                <label for="username">Username:</label>
+                                <input type="text" class="form-control" id="username" name="username">
+                            </div>
+                            <div class="form-group">
+                                <label for="password">Password:</label>
+                                <input type="password" class="form-control" id="password" name="password">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </form>
+                        <p id="loginResult" class="mt-3"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function(){
+            $('#loginForm').submit(function(event) {
+                event.preventDefault();
+                let username = $('#username').val();
+                let password = $('#password').val();
+                $.ajax({
+                    type: "POST",
+                    url: "/chat/login",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        username: username,
+                        password: password
+                    }),
+                    success: function(data) {
+                        if (data.message === "Login successful") {
+                            $('#loginResult').text("Login successful");
+                            let sessionId = data.session_id;
+                            let existingSessions = data.existing_sessions;
+                            let dropdownOptions = "";
+                            existingSessions.forEach(session => {
+                                dropdownOptions += `<option value="${session}">${session}</option>`;
+                            });
+                            localStorage.setItem("currentSessionId", sessionId);
+                            localStorage.setItem("existingSessions", JSON.stringify(existingSessions));
+                            localStorage.setItem("loggedIn", "true");
+                            localStorage.setItem("username", username);
+                            localStorage.setItem("password", password);
+                            localStorage.setItem("dropdownOptions", dropdownOptions);
+                            window.location.href = "/chat/main";
+                        } else {
+                            $('#loginResult').text("Login failed");
+                        }
+                    },
+                    error: function(error) {
+                        console.error("Error:", error);
+                        $('#loginResult').text("Error occurred");
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
