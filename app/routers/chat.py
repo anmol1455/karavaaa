@@ -36,10 +36,6 @@ async def get_chat(request: Request, user_input: str, session_id: str = ""):
     if not session_id:
         raise HTTPException(status_code=401, detail="Session ID not found")
     
-    # Verify if the session ID belongs to the authenticated user
-    # if session_manager.get_user(session_id) != user:
-    #     raise HTTPException(status_code=403, detail="Unauthorized access")
-    
     chat = await admin_instance.unhelpful_chatbot(user_input, session_id)
     return chat
 
