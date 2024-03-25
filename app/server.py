@@ -42,7 +42,6 @@ def create_app() -> FastAPI:
         version="0.1",
         docs_url="/active-docs",
     )
-    # init_middleware(pineapple_app)
     init_routers(karvaaa)
     init_listeners(karvaaa)
     init_cors(karvaaa)
